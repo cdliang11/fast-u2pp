@@ -1,0 +1,103 @@
+# network architecture
+# encoder related
+encoder: conformer
+encoder_conf:
+    output_size: 256    # dimension of attention
+    attention_heads: 4
+    linear_units: 2048  # the number of units of position-wise feed forward
+    num_blocks: 12      # the number of encoder blocks
+    add_l_num_blocks: 0  # 2
+    dropout_rate: 0.1
+    positional_dropout_rate: 0.1
+    attention_dropout_rate: 0.1
+    input_layer: conv2d # encoder input type, you can chose conv2d, conv2d6 and conv2d8
+    normalize_before: true
+    cnn_module_kernel: 9  # 8
+    use_cnn_module: True
+    activation_type: 'swish'
+    pos_enc_layer_type: 'rel_pos'
+    selfattention_layer_type: 'rel_selfattn'
+    causal: true
+    use_dynamic_chunk: true
+    cnn_module_norm: 'layer_norm' # using nn.LayerNorm makes model converge faster
+    use_dynamic_left_chunk: false
+    s_static_chunk_size: 0  # set to 0 if dynamic_chunk dynamic_left
+    b_static_chunk_size: 0
+    s_ctc_layer: 7
+    two_chunk: false
+    dual: true
+
+# decoder related
+decoder: bitransformer
+decoder_conf:
+    attention_heads: 4
+    linear_units: 2048
+    num_blocks: 3
+    r_num_blocks: 3
+    dropout_rate: 0.1
+    positional_dropout_rate: 0.1
+    self_attention_dropout_rate: 0.1
+    src_attention_dropout_rate: 0.1
+
+# hybrid CTC/attention
+model_conf:
+    ctc_weight: 0.3
+    lsm_weight: 0.1     # label smoothing option
+    length_normalized_loss: false
+    reverse_weight: 0.3
+    s_chunk_weight: 0.5 # 0.3
+    distill_weight: 0.0 # 0.1
+    regular: false
+    is_l_ctc: true
+    is_l_ctc_non_stream: false
+
+dataset_conf:
+    filter_conf:
+        max_length: 40960
+        min_length: 0
+        token_max_length: 200
+        token_min_length: 1
+    resample_conf:
+        resample_rate: 16000
+    speed_perturb: true
+    fbank_conf:
+        num_mel_bins: 80
+        frame_shift: 10
+        frame_length: 25
+        dither: 1.0
+    spec_aug: true
+    spec_aug_conf:
+        num_t_mask: 2
+        num_f_mask: 2
+        max_t: 50
+        max_f: 10
+    shuffle: true
+    shuffle_conf:
+        shuffle_size: 1500
+    sort: true
+    sort_conf:
+        sort_size: 500  # sort_size should be less than shuffle_size
+    batch_conf:
+        batch_type: 'static' # static or dynamic
+        batch_size: 16 # 8
+
+grad_clip: 5
+accum_grad: 1   # 1
+max_epoch: 360
+log_interval: 100
+
+optim: adam
+optim_conf:
+    lr: 0.001
+scheduler: warmuplr     # pytorch v1.1.0+ required
+scheduler_conf:
+    warmup_steps: 25000
+
+weight_scheduler: DistillWeightLR
+weight_update:
+  initial_weight: 0.0
+  final_weight: 0.0
+  increase_start_epoch: 0
+  fix_start_epoch: 0
+  update_weight: False
+  increase_type: 'exp'  # exp, linear
